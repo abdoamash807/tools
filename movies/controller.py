@@ -23,7 +23,7 @@ import asyncio
 csv_file = "/home/kda/uploader/movies/fasel.csv"
 
 async def main():
-    api = "http://localhost:5000"
+    api = "http://localhost:8080"
     res = requests.get(f"{api}/movie")
     title =""
     if res.status_code == 200:
@@ -31,6 +31,7 @@ async def main():
         title = data["title"]
     data = await fetch_yts_movie(title) 
     folder_name=''
+    print(data)
     for torrent in data.get('torrents', []):
         if torrent['codec'] == 'x264' and torrent['type'] =='web': 
             download_path = os.path.join("downloads", data['imdb_id']) 

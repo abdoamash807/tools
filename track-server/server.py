@@ -2,25 +2,41 @@ from flask import Flask, jsonify, request
 import pandas as pd
 import threading
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 LOCK = threading.Lock()
 
 def get_csv_path(category):
     return os.path.join(os.path.dirname(__file__), f"{category}.csv")
-
 def process_get(category):
     csv_path = get_csv_path(category)
     with LOCK:
         df = pd.read_csv(csv_path)
 
-        # Ensure columns exist
+        # Ensure required columns
         df['status'] = df.get('status', '').fillna('').astype(str)
         if 'last_updated' not in df.columns:
             df['last_updated'] = ''
+        
+        # Convert 'last_updated' to datetime
+        def parse_date(x):
+            try:
+                return datetime.strptime(x.strip(), '%Y-%m-%d %H:%M:%S UTC')
+            except:
+                return None
+        df['last_updated_dt'] = df['last_updated'].apply(parse_date)
 
-        # Find next item with empty status
+        # Mark "working" items older than 3 hours as "failed"
+        three_hours_ago = datetime.utcnow() - timedelta(hours=4)
+        stale_mask = (df['status'] == 'working') & (df['last_updated_dt'].notnull()) & (df['last_updated_dt'] < three_hours_ago)
+        df.loc[stale_mask, 'status'] = 'failed'
+
+        # Remove temp column before saving
+        df.drop(columns=['last_updated_dt'], inplace=True)
+        df.to_csv(csv_path, index=False)
+
+        # Now continue as usual
         pending = df[df['status'].str.strip() == '']
 
         if pending.empty:
@@ -83,4 +99,4 @@ def post_series(title):
     return process_post('series', title)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True,port=8080)

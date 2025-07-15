@@ -1,0 +1,5 @@
+flask
+pandas
+
+run nohup python /home/root/server.py > flask.log 2>&1 &
+pkill -f server.py

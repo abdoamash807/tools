@@ -46,7 +46,7 @@ async def download_aria2c(download_dir, download_target, renamed_folder="downloa
     except FileNotFoundError:
         print("aria2c is not installed or not in your PATH.")
         return None
-    
+
 if __name__ == "__main__":
     final_path = download_aria2c(
         ".",
